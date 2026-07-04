@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>HappyTask - Find Your Service</title>
   <style>
     :root {
@@ -315,12 +315,17 @@ function spinToTargets(targets) {
   }
 }
 
-// Search input - only trigger on Enter or blur (keyboard dismiss)
+// Search input - only trigger on Enter or keyboard dismiss
+var lastSearched = '';
+var searchedViaEnter = false;
+
 function doSearch() {
   var q = searchInput.value.trim();
   noMatchEl.style.display = 'none';
   matchInfo.innerHTML = '';
   if (!q || q.length < 2) return;
+  if (q === lastSearched) return;
+  lastSearched = q;
   var m = findMatches(q);
   if (m.length === 0) { noMatchEl.style.display = 'block'; return; }
   var t = m.slice(0, 3);
@@ -331,13 +336,21 @@ function doSearch() {
 searchInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
+    searchedViaEnter = true;
     this.blur();
     doSearch();
   }
 });
 
 searchInput.addEventListener('blur', function() {
+  if (searchedViaEnter) { searchedViaEnter = false; return; }
   if (this.value.trim().length >= 2) doSearch();
+});
+
+searchInput.addEventListener('input', function() {
+  lastSearched = '';
+  noMatchEl.style.display = 'none';
+  matchInfo.innerHTML = '';
 });
 </script>
 </body>
