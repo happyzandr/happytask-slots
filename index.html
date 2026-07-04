@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HappyTask - Find Your Service</title>
+  <style>
+    :root {
+      --orange: #F7880C;
+      --orange-light: #FFF3E5;
+      --dark: #1a1a1a;
+      --gray: #666;
+      --light-bg: #FAFAFA;
+      --stroke: #e5e5e5;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--light-bg); color: var(--dark); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .slot-section { max-width: 420px; width: 100%; text-align: center; }
+    .slot-section h2 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
+    .slot-section .subtitle { font-size: 15px; color: var(--gray); margin-bottom: 28px; line-height: 1.4; }
+    .search-wrap { position: relative; max-width: 340px; margin: 0 auto 32px; }
+    .search-wrap input { width: 100%; padding: 12px 44px 12px 18px; border: 2px solid var(--stroke); border-radius: 12px; font-size: 15px; font-family: var(--font); font-weight: 500; outline: none; transition: border-color .2s; background: #fff; }
+    .search-wrap input:focus { border-color: var(--orange); }
+    .search-wrap input::placeholder { color: #aaa; font-weight: 400; }
+    .search-wrap .search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 18px; pointer-events: none; }
+
+    .slot-machine { background: #fff; border-radius: 20px; border: 2px solid var(--stroke); overflow: hidden; }
+    .slot-top-bar { background: var(--orange); padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .slot-top-bar span { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+    .slot-top-bar .dot { width: 6px; height: 6px; background: rgba(255,255,255,.5); border-radius: 50%; }
+
+    .reels-container { display: flex; position: relative; height: 240px; }
+    .reel-frame { flex: 1; position: relative; overflow: hidden; border-right: 1.5px solid var(--stroke); }
+    .reel-frame:last-child { border-right: none; }
+    .reel-frame::before, .reel-frame::after { content: ''; position: absolute; left: 0; right: 0; height: 70px; z-index: 3; pointer-events: none; }
+    .reel-frame::before { top: 0; background: linear-gradient(to bottom, #fff 15%, transparent); }
+    .reel-frame::after { bottom: 0; background: linear-gradient(to top, #fff 15%, transparent); }
+
+    .reel-strip { position: absolute; left: 0; right: 0; will-change: transform; }
+    .reel-strip.spinning { transition: none; }
+    .reel-strip.landing { transition: transform cubic-bezier(.2,.8,.3,1); }
+
+    .reel-item { height: 48px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-size: 12px; font-weight: 500; color: #bbb; text-align: center; line-height: 1.2; word-break: break-word; }
+    .reel-item.landed { color: var(--dark); font-weight: 800; font-size: 13px; }
+
+    .slot-bottom-bar { padding: 16px; border-top: 1.5px solid var(--stroke); display: flex; align-items: center; justify-content: center; }
+    .service-count { font-size: 14px; color: var(--gray); font-weight: 500; }
+    .service-count strong { color: var(--orange); font-weight: 700; }
+
+
+    .match-info { margin-top: 20px; min-height: 24px; }
+    .match-info .match-label { font-size: 13px; color: var(--gray); font-weight: 500; }
+    .match-info .match-label strong { color: var(--dark); }
+
+    .no-match-msg { display: none; margin-top: 16px; padding: 12px 20px; background: #FFF3E5; border-radius: 10px; font-size: 14px; color: var(--dark); line-height: 1.4; }
+    .no-match-msg a { color: var(--orange); font-weight: 700; text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .slot-section h2 { font-size: 24px; }
+      .reel-item { font-size: 10.5px; padding: 0 5px; }
+      .reel-item.landed { font-size: 11.5px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="slot-section">
+    <h2>Find your service</h2>
+    <p class="subtitle">Over 100 services across 14 categories. Search yours below.</p>
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="What service do you offer?" />
+      <span class="search-icon">&#128269;</span>
+    </div>
+    <div class="slot-machine" id="slotMachine">
+      <div class="slot-top-bar">
+        <span class="dot"></span><span>HappyTask</span><span class="dot"></span>
+      </div>
+      <div class="reels-container">
+        <div class="reel-frame"><div class="reel-strip" id="reel0"></div></div>
+        <div class="reel-frame"><div class="reel-strip" id="reel1"></div></div>
+        <div class="reel-frame"><div class="reel-strip" id="reel2"></div></div>
+      </div>
+      <div class="slot-bottom-bar">
+        <span class="service-count"><strong>100+</strong> services available</span>
+      </div>
+    </div>
+    <div class="match-info" id="matchInfo"></div>
+    <div class="no-match-msg" id="noMatch">We don't have that one yet.<br><a href="javascript:void(0)">Tell us what you do and we'll add it.</a></div>
+  </div>
+
+<script>
+var services = [
+  "Car Washing & Detailing","Garage & Basement Cleaning","Home Cleaning","Laundry",
+  "Office Cleaning","Pool Cleaning","Pressure Washing","Rain Gutter Cleaning",
+  "Trash Removal","Window Cleaning","ACT & SAT Exam Tutoring","Art Instructor",
+  "Device & Software Tutoring","History Tutoring","Language Arts Tutoring",
+  "Math Tutoring","Science Tutoring","Actors & Extras","Audio/Visual",
+  "Children's Entertainment","DJs","Live Bands","Magician","Modeling","Solo Artists",
+  "Bartender","Bodyguard & Security","Event Planner","Lifeguard","Personal Chef",
+  "Photographer","Server","Videographer","Babysitter","Cooking & Meal Prep",
+  "Elderly Care","Family Assistant","Special Needs Care","Assemble Products",
+  "General Helper","General Laborer","Moving & Packing","Receptionist","Retail & Sales",
+  "Carpenter (Finish)","Carpenter (General)","Carpet Installer","Concrete Finisher",
+  "Drywall & Taping","Electrical Work","Flooring","Handyman Work","Masonry","Painting",
+  "Plumbing","Roofing","Tile Setter","Garden Bedding","Lawn Maintenance","Planting",
+  "Snow Removal","Brass Instruments",
+  "Guitar & String Instruments","Percussion Instruments","Piano","Vocal Instructor",
+  "Woodwind Instruments","Barber","Fashion Stylist","Hair Removal","Hair Stylist",
+  "Makeup Artist","Massage","Nail Care","Skin Care","Pet Grooming","Pet Sitting",
+  "Pet Training","Pet Walking","Accounting & Bookkeeping","Interior Designer",
+  "Interpreter & Translator","Organizer (Closet, Home, Life)","Personal Assistant",
+  "Video Resume Production","Baseball Training","Basketball Training",
+  "Football Training","Golf Training","Lacrosse Training","Personal Trainer",
+  "Pickleball Training","Soccer Training","Tennis Training",
+  "American Sign Language","Arabic & English","Chinese & English","English",
+  "French & English","German & English","Italian & English","Japanese & English",
+  "Korean & English","Portuguese & English","Russian & English","Spanish & English",
+  "Tagalog & English","Vietnamese & English"
+];
+
+var aliases = {
+  'house': ['home cleaning'], 'houses': ['home cleaning'], 'maid': ['home cleaning'],
+  'powerwash': ['pressure washing'], 'powerwashing': ['pressure washing'], 'power wash': ['pressure washing'],
+  'dog': ['pet walking','pet sitting','pet grooming','pet training'],
+  'cat': ['pet sitting','pet grooming'],
+  'nanny': ['babysitter'], 'childcare': ['babysitter','special needs care'],
+  'tutor': ['math tutoring','science tutoring','history tutoring','language arts tutoring','act & sat exam tutoring'],
+  'gym': ['personal trainer'], 'fitness': ['personal trainer'],
+  'cut': ['barber','hair stylist'], 'haircut': ['barber','hair stylist'],
+  'fade': ['barber'], 'trim': ['barber','hair stylist','lawn maintenance'],
+  'yard': ['lawn maintenance','garden bedding','planting'], 'grass': ['lawn maintenance'],
+  'mow': ['lawn maintenance'], 'mowing': ['lawn maintenance'],
+  'fix': ['handyman work'], 'repair': ['handyman work','plumbing','electrical work'],
+  'clean': ['home cleaning','office cleaning','window cleaning','pool cleaning'],
+  'cleaning': ['home cleaning','office cleaning','window cleaning','pool cleaning'],
+  'wash': ['car washing & detailing','pressure washing','window cleaning'],
+  'car': ['car washing & detailing'], 'auto': ['car washing & detailing'],
+  'paint': ['painting'], 'painter': ['painting'],
+  'plumber': ['plumbing'], 'electrician': ['electrical work'],
+  'massage': ['massage'], 'spa': ['massage','skin care','nail care'],
+  'nails': ['nail care'], 'makeup': ['makeup artist'],
+  'move': ['moving & packing'], 'movers': ['moving & packing'],
+  'photo': ['photographer'], 'video': ['videographer','video resume production'],
+  'dj': ['djs'], 'music': ['djs','live bands','solo artists'],
+  'cook': ['cooking & meal prep','personal chef'], 'chef': ['personal chef'],
+  'assistant': ['personal assistant','family assistant'],
+  'pet': ['pet walking','pet sitting','pet grooming','pet training'],
+  'hair': ['hair stylist','hair removal','barber'],
+  'personal': ['personal chef','personal assistant','personal trainer']
+};
+
+var IH = 48;
+var MID_ROW = 2;
+var reelEls = [document.getElementById('reel0'), document.getElementById('reel1'), document.getElementById('reel2')];
+var searchInput = document.getElementById('searchInput');
+var matchInfo = document.getElementById('matchInfo');
+var noMatchEl = document.getElementById('noMatch');
+var spinning = false;
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function buildReel(el, list) {
+  el.innerHTML = '';
+  for (var i = 0; i < list.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'reel-item';
+    d.textContent = list[i];
+    el.appendChild(d);
+  }
+}
+
+// --- Idle scroll via RAF ---
+var idleOff = [0, services.length * IH, 0];
+var idleSpd = [0.8, -1.1, 0.7];
+var idleRunning = false;
+var idleRafId = null;
+
+function initIdle() {
+  for (var r = 0; r < 3; r++) {
+    var s = shuffle(services);
+    buildReel(reelEls[r], s.concat(s, s));
+  }
+}
+
+function idleLoop() {
+  if (!idleRunning) return;
+  for (var r = 0; r < 3; r++) {
+    idleOff[r] += idleSpd[r];
+    if (idleOff[r] >= services.length * IH) idleOff[r] -= services.length * IH;
+    if (idleOff[r] < 0) idleOff[r] += services.length * IH;
+    reelEls[r].style.transform = 'translateY(' + -idleOff[r] + 'px)';
+  }
+  idleRafId = requestAnimationFrame(idleLoop);
+}
+
+function startIdle() {
+  idleRunning = true;
+  idleLoop();
+}
+
+function stopIdle() {
+  idleRunning = false;
+  if (idleRafId) { cancelAnimationFrame(idleRafId); idleRafId = null; }
+}
+
+initIdle();
+startIdle();
+
+// --- Search ---
+function findMatches(query) {
+  var matches = [], q = query.toLowerCase().trim();
+  if (!q || q.length < 2) return matches;
+  if (aliases[q]) {
+    var al = aliases[q];
+    for (var a = 0; a < al.length; a++)
+      for (var i = 0; i < services.length; i++)
+        if (services[i].toLowerCase() === al[a] && matches.indexOf(services[i]) === -1) matches.push(services[i]);
+  }
+  for (var key in aliases) {
+    if (key !== q && (q.indexOf(key) === 0 || key.indexOf(q) === 0) && q.length >= 3) {
+      var list = aliases[key];
+      for (var a = 0; a < list.length; a++)
+        for (var i = 0; i < services.length; i++)
+          if (services[i].toLowerCase() === list[a] && matches.indexOf(services[i]) === -1) matches.push(services[i]);
+    }
+  }
+  var qw = q.split(/\s+/);
+  for (var i = 0; i < services.length; i++) {
+    var nm = services[i].toLowerCase(), ok = true;
+    for (var w = 0; w < qw.length; w++) if (nm.indexOf(qw[w]) === -1) { ok = false; break; }
+    if (ok && matches.indexOf(services[i]) === -1) matches.push(services[i]);
+  }
+  return matches;
+}
+
+// --- Spin using setInterval + CSS snap ---
+function spinToTargets(targets) {
+  if (spinning) return;
+  spinning = true;
+  stopIdle();
+  noMatchEl.style.display = 'none';
+  matchInfo.innerHTML = '';
+
+  // Clear previous landed
+  document.querySelectorAll('.reel-item.landed').forEach(function(el) { el.classList.remove('landed'); });
+
+  var done = 0;
+  var durations = [1200, 1700, 2200];
+
+  for (var r = 0; r < 3; r++) {
+    (function(ri) {
+      var target = targets[ri] || targets[ri % targets.length];
+      var shuffled = shuffle(services).filter(function(s) { return s !== target; });
+
+      // Build: 40 filler items, then target, then 20 more filler
+      var before = shuffled.slice(0, 40);
+      var after = shuffled.slice(40, 60);
+      var reelList = before.concat([target], after);
+      var targetIdx = 40;
+
+      buildReel(reelEls[ri], reelList);
+
+      // Start from top
+      var pos = 0;
+      reelEls[ri].style.transform = 'translateY(0px)';
+
+      // The final Y to place targetIdx in the middle row:
+      // middle row starts at MID_ROW * IH = 96px from top of frame
+      // item at targetIdx starts at targetIdx * IH from top of strip
+      // translateY = -(targetIdx * IH - MID_ROW * IH)
+      var finalY = (targetIdx - MID_ROW) * IH;
+      var speed = 8;
+      var elapsed = 0;
+      var dur = durations[ri];
+      var lastT = performance.now();
+
+      var iv = setInterval(function() {
+        var now = performance.now();
+        var dt = now - lastT;
+        lastT = now;
+        elapsed += dt;
+
+        var progress = Math.min(elapsed / dur, 1);
+        // Ease out cubic
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var y = eased * finalY;
+
+        reelEls[ri].style.transform = 'translateY(' + (-y) + 'px)';
+
+        if (progress >= 1) {
+          clearInterval(iv);
+          reelEls[ri].style.transform = 'translateY(' + (-finalY) + 'px)';
+          reelEls[ri].children[targetIdx].classList.add('landed');
+
+          done++;
+          if (done === 3) {
+            spinning = false;
+            var unique = [];
+            for (var t = 0; t < targets.length; t++)
+              if (unique.indexOf(targets[t]) === -1) unique.push(targets[t]);
+            if (unique.length > 0)
+              matchInfo.innerHTML = '<span class="match-label">Found <strong>' + unique.length + ' service' + (unique.length > 1 ? 's' : '') + '</strong> matching your search</span>';
+          }
+        }
+      }, 16);
+    })(r);
+  }
+}
+
+// Search input
+var searchTimeout = null;
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  var q = this.value.trim();
+  noMatchEl.style.display = 'none';
+  matchInfo.innerHTML = '';
+  if (!q || q.length < 2) return;
+  searchTimeout = setTimeout(function() {
+    var m = findMatches(q);
+    if (m.length === 0) { noMatchEl.style.display = 'block'; return; }
+    var t = m.slice(0, 3);
+    while (t.length < 3) t.push(t[t.length - 1]);
+    spinToTargets(t);
+  }, 500);
+});
+</script>
+</body>
+</html>
