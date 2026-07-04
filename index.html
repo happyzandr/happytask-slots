@@ -21,7 +21,7 @@
     .slot-section h2 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
     .slot-section .subtitle { font-size: 15px; color: var(--gray); margin-bottom: 28px; line-height: 1.4; }
     .search-wrap { position: relative; max-width: 340px; margin: 0 auto 32px; }
-    .search-wrap input { width: 100%; padding: 12px 44px 12px 18px; border: 2px solid var(--stroke); border-radius: 12px; font-size: 15px; font-family: var(--font); font-weight: 500; outline: none; transition: border-color .2s; background: #fff; }
+    .search-wrap input { width: 100%; padding: 12px 44px 12px 18px; border: 2px solid var(--stroke); border-radius: 12px; font-size: 16px; font-family: var(--font); font-weight: 500; outline: none; transition: border-color .2s; background: #fff; }
     .search-wrap input:focus { border-color: var(--orange); }
     .search-wrap input::placeholder { color: #aaa; font-weight: 400; }
     .search-wrap .search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 18px; pointer-events: none; }
@@ -315,21 +315,29 @@ function spinToTargets(targets) {
   }
 }
 
-// Search input
-var searchTimeout = null;
-searchInput.addEventListener('input', function() {
-  clearTimeout(searchTimeout);
-  var q = this.value.trim();
+// Search input - only trigger on Enter or blur (keyboard dismiss)
+function doSearch() {
+  var q = searchInput.value.trim();
   noMatchEl.style.display = 'none';
   matchInfo.innerHTML = '';
   if (!q || q.length < 2) return;
-  searchTimeout = setTimeout(function() {
-    var m = findMatches(q);
-    if (m.length === 0) { noMatchEl.style.display = 'block'; return; }
-    var t = m.slice(0, 3);
-    while (t.length < 3) t.push(t[t.length - 1]);
-    spinToTargets(t);
-  }, 500);
+  var m = findMatches(q);
+  if (m.length === 0) { noMatchEl.style.display = 'block'; return; }
+  var t = m.slice(0, 3);
+  while (t.length < 3) t.push(t[t.length - 1]);
+  spinToTargets(t);
+}
+
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    this.blur();
+    doSearch();
+  }
+});
+
+searchInput.addEventListener('blur', function() {
+  if (this.value.trim().length >= 2) doSearch();
 });
 </script>
 </body>
