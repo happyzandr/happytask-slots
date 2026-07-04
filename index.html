@@ -351,6 +351,11 @@ searchInput.addEventListener('input', function() {
   lastSearched = '';
   noMatchEl.style.display = 'none';
   matchInfo.innerHTML = '';
+  if (!this.value.trim()) {
+    initReels();
+    startIdle();
+    document.querySelectorAll('.reel-item.landed').forEach(function(el) { el.classList.remove('landed'); });
+  }
 });
 </script>
 </body>
